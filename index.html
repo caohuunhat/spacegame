@@ -17,6 +17,7 @@
     <button id="left-button">Move Left</button>
     <button id="right-button">Move Right</button>
     <button id="shoot-button">Shoot</button>
+    <button id="restart-button">Restart</button>
 
     <h3>Di chuyển phím: Trái hoặc Phải | SPACE để bắn</h3>
     <!-- Load the game script -->
@@ -224,7 +225,7 @@
         .addEventListener('mouseup', function () {
           movingRight = false;
         });
-      document
+      document  
         .getElementById('shoot-button')
         .addEventListener('click', function () {
           bullets.push({ x: playerX + PLAYER_WIDTH / 2, y: playerY });
@@ -247,6 +248,21 @@
           movingRight = false;
         }
       });
+
+      document
+        .getElementById('restart-button')
+        .addEventListener('click', function () {
+          // Reset game state variables
+          playerX = 50;
+          playerY = canvas.height - PLAYER_HEIGHT - 10;
+          bullets = [];
+          enemies = [];
+          score = 0;
+          gameOver = false;
+
+          // Start the game loop
+          loop();
+        });
     </script>
   </body>
 </html>
