@@ -7,19 +7,31 @@
         border: 1px solid black;
         background-color: black;
       }
+
+      #main {
+        display: flex;
+        flex-direction: row;
+        column-gap: 10px;
+      }
     </style>
   </head>
   <body>
-    <!-- Create a canvas element where the game will be drawn -->
-    <canvas id="game-canvas" width="600" height="600"></canvas>
-    <br />
-    <!-- Create buttons for controlling the game -->
-    <button id="left-button">Move Left</button>
-    <button id="right-button">Move Right</button>
-    <button id="shoot-button">Shoot</button>
-    <button id="restart-button">Restart</button>
-
-    <h3>Di chuyển phím: Trái hoặc Phải | SPACE để bắn</h3>
+    <div id="main">
+      <div>
+        <!-- Create a canvas element where the game will be drawn -->
+        <canvas id="game-canvas" width="600" height="600"></canvas>
+      </div>
+      <div>
+        <h1>Space shooter</h1>
+        <h2>Rule: Shoot and avoid the enemies, they will follow you</h2>
+        <h3>Key:</h3>
+        <ul>
+          <li>ARROW KEY : move</li>
+          <li>SPACE : shoot</li>
+          <li>R : restart</li>
+        </ul>
+      </div>
+    </div>
     <!-- Load the game script -->
     <script>
       // Get a reference to the canvas and canvas context
@@ -35,11 +47,13 @@
       const BULLET_SPEED = 10;
       const ENEMY_WIDTH = 20;
       const ENEMY_HEIGHT = 20;
-      const ENEMY_SPEED = 2;
+      const ENEMY_SPEED = 1.5;
 
       // Set up some game state
       let playerX = canvas.width / 2;
-      let playerY = canvas.height - PLAYER_HEIGHT;
+      let playerY = canvas.height / 2;
+      // let playerY = canvas.height - PLAYER_HEIGHT;
+
       let bullets = [];
       let enemies = [];
       let gameOver = false;
@@ -48,11 +62,16 @@
       // Set up some game control variables
       let movingLeft = false;
       let movingRight = false;
+      let movingUp = false;
+      let movingDown = false;
 
       // Set up some keycode constants
       const LEFT_ARROW = 37;
       const RIGHT_ARROW = 39;
+      const UP_ARROW = 38;
+      const DOWN_ARROW = 40;
       const SPACE = 32;
+      const RESTART = 82;
 
       // Handle player movement
       function movePlayer() {
@@ -62,9 +81,16 @@
         if (movingRight) {
           playerX += PLAYER_SPEED;
         }
+        if (movingUp) {
+          playerY -= PLAYER_SPEED;
+        }
+        if (movingDown) {
+          playerY += PLAYER_SPEED;
+        }
 
         // Prevent the player from moving off the screen
         playerX = Math.max(0, Math.min(playerX, canvas.width - PLAYER_WIDTH));
+        playerY = Math.max(0, Math.min(playerY, canvas.width - PLAYER_HEIGHT));
       }
 
       // Handle bullet movement
@@ -85,7 +111,24 @@
       function moveEnemies() {
         for (let i = 0; i < enemies.length; i++) {
           let enemy = enemies[i];
-          enemy.y += ENEMY_SPEED;
+          // enemy.y += ENEMY_SPEED;
+
+          // for (const enemy of enemies) {
+          // Calculate distance between enemy and player
+          const distX = playerX - enemy.x;
+          const distY = playerY - enemy.y;
+
+          // Calculate angle between enemy and player
+          const angle = Math.atan2(distY, distX);
+
+          // Set enemy dx and dy based on angle
+          enemy.dx = Math.cos(angle) * ENEMY_SPEED;
+          enemy.dy = Math.sin(angle) * ENEMY_SPEED;
+
+          // Update enemy position
+          enemy.x += enemy.dx;
+          enemy.y += enemy.dy;
+          // }
 
           // Remove enemies that have moved off the screen
           if (enemy.y > canvas.height) {
@@ -97,9 +140,26 @@
 
       // Handle enemy spawning
       function spawnEnemy() {
-        // Choose a random x coordinate for the enemy
-        let x = Math.random() * (canvas.width - ENEMY_WIDTH);
-        enemies.push({ x: x, y: 0 });
+        let x, y, dx, dy;
+        if (Math.random() < 0.5) {
+          // Spawn at a random x position on the top or bottom edge
+          x = Math.random() * canvas.width;
+          y = Math.random() < 0.5 ? 0 : canvas.height;
+          dx = (canvas.width / 2 - x) / 50; // move towards the center of the screen
+          dy = (canvas.height / 2 - y) / 50; // move towards the center of the screen
+        } else {
+          // Spawn at a random y position on the left or right edge
+          x = Math.random() < 0.5 ? 0 : canvas.width;
+          y = Math.random() * canvas.height;
+          dx = (canvas.width / 2 - x) / 50; // move towards the center of the screen
+          dy = (canvas.height / 2 - y) / 50; // move towards the center of the screen
+        }
+        enemies.push({
+          x: x,
+          y: y,
+          dx: dx,
+          dy: dy,
+        });
       }
 
       // Check for bullet-enemy collisions
@@ -177,7 +237,11 @@
           ctx.fillStyle = 'white';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2);
+          ctx.fillText(
+            'Game Over, Press R',
+            canvas.width / 2,
+            canvas.height / 3
+          );
         }
       }
 
@@ -195,6 +259,12 @@
           spawnEnemy();
         }
 
+        // Update enemy positions
+        enemies.forEach(function (enemy) {
+          enemy.x += enemy.dx; // add the x velocity to the x position
+          enemy.y += enemy.dy; // add the y velocity to the y position
+        });
+
         // Keep the game loop running
         if (!gameOver) {
           requestAnimationFrame(loop);
@@ -204,65 +274,60 @@
       // Start the game loop
       loop();
 
-      // Set up event listeners for the buttons
-      document
-        .getElementById('left-button')
-        .addEventListener('mousedown', function () {
-          movingLeft = true;
-        });
-      document
-        .getElementById('left-button')
-        .addEventListener('mouseup', function () {
-          movingLeft = false;
-        });
-      document
-        .getElementById('right-button')
-        .addEventListener('mousedown', function () {
-          movingRight = true;
-        });
-      document
-        .getElementById('right-button')
-        .addEventListener('mouseup', function () {
-          movingRight = false;
-        });
-      document  
-        .getElementById('shoot-button')
-        .addEventListener('click', function () {
-          bullets.push({ x: playerX + PLAYER_WIDTH / 2, y: playerY });
-        });
-
       // Set up event listeners for keyboard input
       document.addEventListener('keydown', function (event) {
         if (event.keyCode === LEFT_ARROW) {
           movingLeft = true;
         } else if (event.keyCode === RIGHT_ARROW) {
           movingRight = true;
+        } else if (event.keyCode === UP_ARROW) {
+          movingUp = true;
+        } else if (event.keyCode === DOWN_ARROW) {
+          movingDown = true;
         } else if (event.keyCode === SPACE) {
-          bullets.push({ x: playerX + PLAYER_WIDTH / 2, y: playerY });
+          bullets.push({
+            x: playerX + PLAYER_WIDTH / 2 - BULLET_WIDTH / 2,
+            y: playerY - BULLET_HEIGHT,
+          });
         }
+
+        event.preventDefault();
       });
+
       document.addEventListener('keyup', function (event) {
         if (event.keyCode === LEFT_ARROW) {
           movingLeft = false;
         } else if (event.keyCode === RIGHT_ARROW) {
           movingRight = false;
+        } else if (event.keyCode === UP_ARROW) {
+          movingUp = false;
+        } else if (event.keyCode === DOWN_ARROW) {
+          movingDown = false;
         }
+
+        event.preventDefault();
       });
 
-      document
-        .getElementById('restart-button')
-        .addEventListener('click', function () {
+      window.addEventListener('keydown', function (event) {
+        if (event.keyCode === RESTART && gameOver) {
           // Reset game state variables
-          playerX = 50;
-          playerY = canvas.height - PLAYER_HEIGHT - 10;
+          playerX = canvas.width / 2;
+          playerY = canvas.height / 2;
           bullets = [];
           enemies = [];
           score = 0;
+
+          movingLeft = false;
+          movingRight = false;
+          movingUp = false;
+          movingDown = false;
+
           gameOver = false;
 
           // Start the game loop
           loop();
-        });
+        }
+      });
     </script>
   </body>
 </html>
